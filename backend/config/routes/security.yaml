@@ -1,0 +1,5 @@
+# config/routes/security.yaml
+
+security_login:
+    path: /api/login
+    methods: POST

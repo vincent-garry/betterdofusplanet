@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New DofusQuest{% endblock %}
+
+{% block body %}
+    <h1>Create new DofusQuest</h1>
+
+    {{ include('dofus_quest/_form.html.twig') }}
+
+    <a href="{{ path('app_dofus_quest_index') }}">back to list</a>
+{% endblock %}

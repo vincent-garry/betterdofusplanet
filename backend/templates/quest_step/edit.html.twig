@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit QuestStep{% endblock %}
+
+{% block body %}
+    <h1>Edit QuestStep</h1>
+
+    {{ include('quest_step/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_quest_step_index') }}">back to list</a>
+
+    {{ include('quest_step/_delete_form.html.twig') }}
+{% endblock %}

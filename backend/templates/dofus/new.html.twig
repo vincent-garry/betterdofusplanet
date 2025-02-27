@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Dofus{% endblock %}
+
+{% block body %}
+    <h1>Create new Dofus</h1>
+
+    {{ include('dofus/_form.html.twig') }}
+
+    <a href="{{ path('app_dofus_index') }}">back to list</a>
+{% endblock %}

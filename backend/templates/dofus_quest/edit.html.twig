@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit DofusQuest{% endblock %}
+
+{% block body %}
+    <h1>Edit DofusQuest</h1>
+
+    {{ include('dofus_quest/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_dofus_quest_index') }}">back to list</a>
+
+    {{ include('dofus_quest/_delete_form.html.twig') }}
+{% endblock %}

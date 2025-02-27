@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New QuestStep{% endblock %}
+
+{% block body %}
+    <h1>Create new QuestStep</h1>
+
+    {{ include('quest_step/_form.html.twig') }}
+
+    <a href="{{ path('app_quest_step_index') }}">back to list</a>
+{% endblock %}

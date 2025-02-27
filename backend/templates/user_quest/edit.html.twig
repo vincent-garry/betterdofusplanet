@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit UserQuest{% endblock %}
+
+{% block body %}
+    <h1>Edit UserQuest</h1>
+
+    {{ include('user_quest/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_user_quest_index') }}">back to list</a>
+
+    {{ include('user_quest/_delete_form.html.twig') }}
+{% endblock %}
