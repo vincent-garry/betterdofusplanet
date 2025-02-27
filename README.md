@@ -1,2 +1,5 @@
 # betterdofusplanet
-A better app of Dofus Planet with Symfony and Vue.JS
+
+I try to be a better UX/UI of Dofus Planet, with quest steps to cancel Dofuspourlesnoobs link redirect and do everything on one site.
+
+I use Symfony for the backend and Vue.JS for the frontend.
