@@ -124,7 +124,13 @@ export default {
         <div class="bg-white p-4 rounded-lg shadow">
           <h2 class="text-xl font-semibold mb-4">Répartition des Quêtes par Dofus</h2>
           <Pie v-if="questsByDofus.length"
-               :data="{ labels: questsByDofus.map(d => d.name), datasets: [{ data: questsByDofus.map(d => d.count), backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56'] }] }"/>
+               :data="{ labels: questsByDofus.map(d => d.name), datasets: [{ data: questsByDofus.map(d => d.count), backgroundColor: [
+  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+  '#FF9F40', '#C9CBCF', '#FF6384', '#1D3557', '#457B9D',
+  '#A8DADC', '#F4A261', '#E76F51', '#2A9D8F', '#264653',
+  '#8D99AE', '#D62828', '#F77F00', '#FCBF49', '#E63946',
+  '#6A0572', '#AB83A1', '#1B9AAA', '#FFD166', '#06D6A0'
+] }] }"/>
         </div>
       </div>
     </div>

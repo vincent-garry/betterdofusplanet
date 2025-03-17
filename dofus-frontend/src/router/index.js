@@ -25,12 +25,14 @@ const router = createRouter({
 
 // Vérification de l'authentification et des rôles
 router.beforeEach((to, from, next) => {
-    const user = store.state.auth?.user; // Vérifier que `auth` existe bien
     const token = localStorage.getItem('token');
+    const user = store.state.auth?.user || null;
 
-    if (to.meta.requiresAuth && !token) {
+    if (!token && to.path !== '/login') {
+        // ✅ Rediriger toutes les personnes non connectées vers /login
         next('/login');
     } else if (to.meta.requiresAdmin && (!user || !user.roles?.includes('ROLE_ADMIN'))) {
+        // ✅ Si admin requis mais l'utilisateur n'est pas admin, rediriger vers /
         next('/');
     } else {
         next();
