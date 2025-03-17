@@ -64,6 +64,18 @@
 
           <label class="block mb-2">URL Image</label>
           <input v-model="modalData.image" type="text" class="border p-2 rounded w-full mb-2" />
+
+          <label class="block mb-2">URL Icon</label>
+          <input v-model="modalData.icon" type="text" class="border p-2 rounded w-full mb-2" />
+
+          <label class="block mb-2">Type de dofus</label>
+          <select v-model="modalData.type" class="border p-2 rounded w-full">
+            <option value="primordial">Primordial</option>
+            <option value="secondary">Secondaire</option>
+          </select>
+
+          <label class="block mb-2">Nombre de succès</label>
+          <input v-model.number="modalData.achievementCount" type="number" class="border p-2 rounded w-full mb-2" />
         </div>
 
         <p v-if="modalType === 'delete'" class="text-red-500">Voulez-vous vraiment supprimer ce Dofus ?</p>
@@ -87,7 +99,7 @@ export default {
       dofusList: [],
       modalOpen: false,
       modalType: null,
-      modalData: { name: "", description: "", image: "", level: 1 },
+      modalData: { name: "", description: "", image: "", level: 1, type: "", achievementCount: 1, icon: "" },
       activeMenu: null, // Stocke l'ID du Dofus dont le menu contextuel est ouvert
       apiUrl: "http://127.0.0.1:8000/api/dofus"
     };
@@ -120,7 +132,7 @@ export default {
       }
     },
 
-    openModal(type, dofus = { name: "", description: "", image: "", level: 1 }) {
+    openModal(type, dofus = { name: "", description: "", image: "", level: 1, type: "", achievementCount: 1, icon: "" }) {
       this.modalType = type;
       this.modalData = { ...dofus };
       this.modalOpen = true;
@@ -133,6 +145,9 @@ export default {
           description: this.modalData.description,
           image: this.modalData.image,
           level: Number(this.modalData.level),
+          type: this.modalData.type,
+          achievementCount: this.modalData.achievementCount,
+          icon: this.modalData.icon,
         };
 
         let response;

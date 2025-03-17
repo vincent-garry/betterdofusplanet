@@ -1,21 +1,25 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-      <h2 class="text-2xl font-bold text-center mb-4">Connexion</h2>
+  <div class="flex min-h-screen items-center justify-center bg-gray-900">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+      <h2 class="text-2xl font-semibold text-white text-center mb-6">Connexion</h2>
       <form @submit.prevent="login">
         <div class="mb-4">
-          <label class="block text-gray-700">Nom d'utilisateur</label>
-          <input v-model="username" type="text" class="w-full p-2 border rounded-lg" required />
+          <label class="block text-gray-300 text-sm font-medium">Nom d'utilisateur</label>
+          <input v-model="username" type="text" class="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-500" required />
         </div>
         <div class="mb-4">
-          <label class="block text-gray-700">Mot de passe</label>
-          <input v-model="password" type="password" class="w-full p-2 border rounded-lg" required />
+          <label class="block text-gray-300 text-sm font-medium">Mot de passe</label>
+          <input v-model="password" type="password" class="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-500" required />
         </div>
         <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">
           Se connecter
         </button>
       </form>
-      <p v-if="errorMessage" class="text-red-500 mt-2 text-center">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="text-red-500 text-sm mb-4">{{ errorMessage }}</p>
+      <p class="text-gray-400 text-sm text-center mt-4">
+        Pas encore inscrit ?
+        <router-link to="/register" class="text-blue-400 hover:underline">Inscrivez-vous</router-link>
+      </p>
     </div>
   </div>
 </template>

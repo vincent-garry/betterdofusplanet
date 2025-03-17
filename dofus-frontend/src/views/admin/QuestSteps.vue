@@ -37,7 +37,10 @@
             <td class="px-4 py-2">{{ step.description }}</td>
             <td class="px-4 py-2">{{ step.positionX }};{{ step.positionY }}</td>
             <td class="px-4 py-2">
-              <img v-if="step.image" :src="step.image" alt="Illustration" class="w-12 h-12 object-cover rounded" />
+              <img v-if="step.image" v-for="(img, index) in step.image.split(';')" :key="index"
+                   :src="img.trim()" alt="Illustration"
+                   class="w-32 h-32 object-cover rounded-lg border border-gray-600 shadow cursor-pointer"
+                   @click.stop="openImageModal(img.trim())">
               <span v-else class="text-gray-400">Aucune image</span>
             </td>
             <td class="px-4 py-2">{{ step.step_order }}</td>

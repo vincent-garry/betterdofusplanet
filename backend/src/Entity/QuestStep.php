@@ -39,9 +39,15 @@ class QuestStep
     #[ORM\JoinColumn(nullable: false)]
     private ?Quest $quest = null;
 
+    /**
+     * @var Collection<int, UserQuestStep>
+     */
+    #[ORM\OneToMany(targetEntity: UserQuestStep::class, mappedBy: 'step', orphanRemoval: true)]
+    private Collection $userQuestSteps;
+
     public function __construct()
     {
-
+        $this->userQuestSteps = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -129,6 +135,36 @@ class QuestStep
     public function setQuest(?Quest $quest): static
     {
         $this->quest = $quest;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserQuestStep>
+     */
+    public function getUserQuestSteps(): Collection
+    {
+        return $this->userQuestSteps;
+    }
+
+    public function addUserQuestStep(UserQuestStep $userQuestStep): static
+    {
+        if (!$this->userQuestSteps->contains($userQuestStep)) {
+            $this->userQuestSteps->add($userQuestStep);
+            $userQuestStep->setStep($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserQuestStep(UserQuestStep $userQuestStep): static
+    {
+        if ($this->userQuestSteps->removeElement($userQuestStep)) {
+            // set the owning side to null (unless already changed)
+            if ($userQuestStep->getStep() === $this) {
+                $userQuestStep->setStep(null);
+            }
+        }
 
         return $this;
     }

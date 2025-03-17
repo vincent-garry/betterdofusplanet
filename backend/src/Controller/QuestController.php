@@ -23,60 +23,82 @@ class QuestController extends AbstractController
         $data = [];
 
         foreach ($quests as $quest) {
-            $dofusQuest = $em->getRepository(DofusQuest::class)->findOneBy(['quest' => $quest]);
-            $questRewards = $em->getRepository(QuestReward::class)->findBy(['quest' => $quest]);
+            // Récupération de toutes les relations Quest <-> Dofus (DofusQuest)
+            $dofusQuests = $em->getRepository(DofusQuest::class)->findBy(['quest' => $quest], ['questOrder' => 'ASC']); // Tri par ordre croissant
 
-            $rewardsData = [];
-            foreach ($questRewards as $reward) {
-                $rewardsData[] = [
-                    'name' => $reward->getRewardName(),
-                    'quantity' => $reward->getQuantity()
-                ];
+            // Transformation des Dofus en un tableau associatif
+            $dofusData = [];
+            foreach ($dofusQuests as $dq) {
+                if ($dq->getDofus()) {
+                    $dofusData[] = [
+                        'id' => $dq->getDofus()->getId(),
+                        'name' => $dq->getDofus()->getName(),
+                        'order' => $dq->getQuestOrder() // ✅ On garde l'ordre ici !
+                    ];
+                }
             }
 
+            // Récupération des récompenses de la quête
+            $questRewards = $em->getRepository(QuestReward::class)->findBy(['quest' => $quest]);
+            $rewardsData = array_map(fn($reward) => [
+                'name' => $reward->getRewardName(),
+                'quantity' => $reward->getQuantity()
+            ], $questRewards);
+
+            // Construction de la réponse
             $data[] = [
                 'id' => $quest->getId(),
                 'title' => $quest->getTitle(),
                 'description' => $quest->getDescription(),
                 'level' => $quest->getLevel(),
-                'order' => $dofusQuest ? $dofusQuest->getQuestOrder() : null,
-                'dofus' => $dofusQuest ? [
-                    'id' => $dofusQuest->getDofus()->getId(),
-                    'name' => $dofusQuest->getDofus()->getName()
-                ] : null,
-                'rewards' => $rewardsData // Correctif ici pour inclure toutes les récompenses
+                'dofus' => $dofusData, // ✅ Liste complète des Dofus avec ordre
+                'rewards' => $rewardsData,
+                'questOrder' => $dofusQuests[0]->getQuestOrder(),
             ];
         }
 
         return $this->json($data);
     }
 
-
     #[Route('', name: 'create_quest', methods: ['POST'])]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
-        if (!isset($data['title'], $data['description'], $data['level'], $data['dofus_id'], $data['quest_order'], $data['rewards'])) {
+        if (!isset($data['title'], $data['description'], $data['level'], $data['dofus_ids'], $data['quest_order'], $data['rewards'])) {
             return $this->json(['error' => 'Données manquantes'], 400);
         }
 
+        /*
         $dofus = $em->getRepository(Dofus::class)->find($data['dofus_id']);
         if (!$dofus) {
             return $this->json(['error' => 'Dofus non trouvé'], 404);
         }
+        */
 
         $quest = new Quest();
         $quest->setTitle($data['title']);
         $quest->setDescription($data['description']);
         $quest->setLevel((int) $data['level']);
 
-        // Associer la quête au dofus avec un ordre
+        foreach($data['dofus_ids'] as $dofusId) {
+            $dofus = $em->getRepository(Dofus::class)->find($dofusId);
+            if($dofus){
+                $dofusQuest = new DofusQuest();
+                $dofusQuest->setQuest($quest);
+                $dofusQuest->setDofus($dofus);
+                $dofusQuest->setQuestOrder($data['quest_order']);
+                $em->persist($dofusQuest);
+            }
+        }
+
+        /* Associer la quête au dofus avec un ordre
         $dofusQuest = new DofusQuest();
         $dofusQuest->setQuest($quest);
         $dofusQuest->setDofus($dofus);
         $dofusQuest->setQuestOrder((int) $data['quest_order']);
         $em->persist($dofusQuest);
+        */
 
         // Ajouter les récompenses
         foreach ($data['rewards'] as $rewardData) {
@@ -99,31 +121,48 @@ class QuestController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        // Vérification des données
-        if (!isset($data['title'], $data['description'], $data['level'], $data['dofus_id'], $data['quest_order'], $data['rewards'])) {
+        if (!isset($data['title'], $data['description'], $data['level'], $data['dofus_ids'], $data['quest_order'], $data['rewards'])) {
             return $this->json(['error' => 'Données manquantes'], 400);
         }
 
-        // Vérification du Dofus
-        $dofus = $dofusRepo->find($data['dofus_id']);
-        if (!$dofus) {
-            return $this->json(['error' => 'Dofus non trouvé'], 404);
-        }
-
-        // Mise à jour de la quête
         $quest->setTitle($data['title']);
         $quest->setDescription($data['description']);
         $quest->setLevel((int) $data['level']);
 
-        // Mise à jour de la relation avec le Dofus
-        $dofusQuest = $em->getRepository(DofusQuest::class)->findOneBy(['quest' => $quest]);
-        if (!$dofusQuest) {
-            $dofusQuest = new DofusQuest();
-            $dofusQuest->setQuest($quest);
-            $em->persist($dofusQuest);
+        // Récupération des relations actuelles Dofus <-> Quête
+        $existingDofusQuests = $em->getRepository(DofusQuest::class)->findBy(['quest' => $quest]);
+        $existingDofusIds = [];
+        foreach ($existingDofusQuests as $dq) {
+            $existingDofusIds[$dq->getDofus()->getId()] = $dq; // Associe l'ID du Dofus à son objet DofusQuest
         }
-        $dofusQuest->setDofus($dofus);
-        $dofusQuest->setQuestOrder((int) $data['quest_order']);
+
+        // Liste des nouveaux Dofus à lier
+        $newDofusIds = $data['dofus_ids'];
+
+        // Gestion des nouvelles associations et mise à jour des existantes
+        foreach ($newDofusIds as $dofusId) {
+            if (isset($existingDofusIds[$dofusId])) {
+                // Si la relation existe déjà, on met à jour l'ordre de la quête
+                $dofusQuest = $existingDofusIds[$dofusId];
+                $dofusQuest->setQuestOrder((int) $data['quest_order']);
+                unset($existingDofusIds[$dofusId]); // On le retire de la liste des anciennes relations
+            } else {
+                // Sinon, on ajoute une nouvelle relation
+                $dofus = $dofusRepo->find($dofusId);
+                if ($dofus) {
+                    $dofusQuest = new DofusQuest();
+                    $dofusQuest->setQuest($quest);
+                    $dofusQuest->setDofus($dofus);
+                    $dofusQuest->setQuestOrder((int) $data['quest_order']);
+                    $em->persist($dofusQuest);
+                }
+            }
+        }
+
+        // Suppression des relations qui ne sont plus valides
+        foreach ($existingDofusIds as $dq) {
+            $em->remove($dq);
+        }
 
         // Suppression des anciennes récompenses
         $existingRewards = $em->getRepository(QuestReward::class)->findBy(['quest' => $quest]);
@@ -140,6 +179,7 @@ class QuestController extends AbstractController
             $em->persist($reward);
         }
 
+        // Sauvegarde des modifications
         $em->flush();
 
         return $this->json(['message' => 'Quête mise à jour avec succès'], 200);

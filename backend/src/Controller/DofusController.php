@@ -3,6 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Dofus;
+use App\Entity\DofusQuest;
+use App\Entity\QuestReward;
+use App\Entity\QuestStep;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,13 +20,19 @@ final class DofusController extends AbstractController
     {
         $dofuses = $em->getRepository(Dofus::class)->findAll();
 
-        $data = array_map(function ($dofus) {
+        $data = array_map(function ($dofus) use ($em) {
+            $questCount = $em->getRepository(DofusQuest::class)->count(['dofus' => $dofus]);
+
             return [
                 'id' => $dofus->getId(),
                 'name' => $dofus->getName(),
                 'description' => $dofus->getDescription(),
                 'image' => $dofus->getImage(),
                 'level' => $dofus->getLevel(),
+                'type' => $dofus->getType(),
+                'icon' => $dofus->getIcon(),
+                'achievementCount' => $dofus->getAchievementCount(),
+                'questCount' => $questCount
             ];
         }, $dofuses);
 
@@ -44,6 +53,9 @@ final class DofusController extends AbstractController
         $dofus->setDescription($data['description']);
         $dofus->setImage($data['image']);
         $dofus->setLevel($data['level']);
+        $dofus->setType($data['type']);
+        $dofus->setAchievementCount($data['achievementCount']);
+        $dofus->setIcon($data['icon']);
 
         $em->persist($dofus);
         $em->flush();
@@ -61,10 +73,12 @@ final class DofusController extends AbstractController
         $dofus->setDescription($data['description']);
         $dofus->setImage($data['image']);
         $dofus->setLevel($data['level']);
+        $dofus->setType($data['type']);
+        $dofus->setAchievementCount($data['achievementCount']);
 
         $em->flush();
 
-        return $this->json(['message' => 'Dofus mis à jour']);
+        return $this->json(['message' => 'Dofus mis à jour !']);
     }
 
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
@@ -75,4 +89,75 @@ final class DofusController extends AbstractController
 
         return $this->json(['message' => 'Dofus supprimé']);
     }
+
+    #[Route('/{id}', name: 'get_dofus', methods: ['GET'])]
+    public function getDofus(int $id, EntityManagerInterface $em): JsonResponse
+    {
+        $dofus = $em->getRepository(Dofus::class)->find($id);
+
+        if (!$dofus) {
+            return $this->json(['error' => 'Dofus non trouvé'], 404);
+        }
+
+        // Récupérer le nombre de quêtes liées au Dofus
+        $questCount = $em->getRepository(DofusQuest::class)->count(['dofus' => $dofus]);
+
+        return $this->json([
+            'id' => $dofus->getId(),
+            'name' => $dofus->getName(),
+            'image' => $dofus->getImage(),
+            'icon' => $dofus->getIcon(),
+            'achievementCount' => $dofus->getAchievementCount(),
+            'questCount' => $questCount, // Ajout du calcul dynamique
+        ]);
+    }
+
+
+    #[Route('/{id}/quests', name: 'dofus_quests', methods: ['GET'])]
+    public function getDofusQuests(int $id, EntityManagerInterface $em): JsonResponse
+    {
+        $dofus = $em->getRepository(Dofus::class)->find($id);
+
+        if (!$dofus) {
+            return $this->json(['error' => "Dofus ID $id non trouvé"], 404);
+        }// ✅ Ajoute ceci pour voir si l'objet est bien récupéré
+        $dofusQuests = $em->getRepository(DofusQuest::class)->findBy(['dofus' => $dofus], ['questOrder' => 'ASC']);
+
+        if (!$dofusQuests) {
+            return $this->json(['error' => 'Aucune quête trouvée pour ce Dofus'], 404);
+        }
+
+        $questsData = [];
+
+        foreach ($dofusQuests as $dofusQuest) {
+            $quest = $dofusQuest->getQuest();
+            $steps = $em->getRepository(QuestStep::class)->findBy(['quest' => $quest], ['stepOrder' => 'ASC']);
+            $questRewards = $em->getRepository(QuestReward::class)->findBy(['quest' => $quest]);
+
+            $rewardsData = [];
+            foreach ($questRewards as $reward) {
+                $rewardsData[] = [
+                    'name' => $reward->getRewardName(),
+                    'quantity' => $reward->getQuantity()
+                ];
+            }
+
+            $questsData[] = [
+                'id' => $quest->getId(),
+                'title' => $quest->getTitle(),
+                'steps' => array_map(fn($step) => [
+                    'id' => $step->getId(),
+                    'title' => $step->getTitle(),
+                    'description' => $step->getDescription(),
+                    'positionX' => $step->getPositionX(),
+                    'positionY' => $step->getPositionY(),
+                    'image' => $step->getImage(),
+                ], $steps,),
+                'rewards' => $rewardsData
+            ];
+        }
+
+        return $this->json($questsData);
+    }
+
 }

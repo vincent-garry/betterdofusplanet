@@ -13,7 +13,7 @@
 
       <!-- Tableau des quêtes -->
       <div class="overflow-x-auto mt-6">
-        <table class="min-w-full bg-white shadow-lg rounded-lg">
+        <table class="min-w-full bg-white shadow-lg rounded-lg text-center">
           <thead class="bg-gray-800 text-white">
           <tr>
             <th @click="sortBy('id')" class="px-4 py-2 cursor-pointer">ID ⬆⬇</th>
@@ -31,7 +31,15 @@
             <td class="px-4 py-2">{{ quest.title }}</td>
             <td class="px-4 py-2">{{ quest.description }}</td>
             <td class="px-4 py-2">{{ quest.level }}</td>
-            <td class="px-4 py-2">{{ quest.dofus.name }}</td>
+            <td class="px-4 py-2">
+              <ul v-if="quest.dofus && quest.dofus.length">
+                <li v-for="dofus in quest.dofus" :key="dofus.id">
+                 - {{ dofus.name }}
+                </li>
+              </ul>
+              <span v-else class="text-gray-400">Aucun Dofus</span>
+            </td>
+
             <td class="px-4 py-2">
               <ul v-if="quest.rewards && quest.rewards.length">
                 <li v-for="reward in quest.rewards" :key="reward.id">
@@ -67,15 +75,31 @@
             <label class="block mb-2">Niveau</label>
             <input v-model.number="modalData.level" type="number" min="1" class="border p-2 rounded w-full mb-2" />
 
-            <label class="block mb-2">Dofus associé</label>
+            <div class="mb-4">
+              <label class="block text-gray-700">Dofus Associés</label>
+              <Multiselect
+                  v-model="modalData.dofus_ids"
+                  :options="dofusList"
+                  :multiple="true"
+                  :close-on-select="false"
+                  :clear-on-select="false"
+                  :preserve-search="true"
+                  label="name"
+                  track-by="id"
+                  placeholder="Sélectionner les Dofus"
+                  class="text-gray-800"
+              />
+            </div>
+
+            <!--<label class="block mb-2">Dofus associé</label>
             <select v-model="modalData.dofus_id" class="border p-2 rounded w-full">
               <option v-for="dofus in dofusList" :key="dofus.id" :value="dofus.id">
                 {{ dofus.name }}
               </option>
             </select>
-
+            -->
             <label class="block mb-2">Ordre</label>
-            <input v-model.number="modalData.quest_ordre" type="number" min="1" class="border p-2 rounded w-full mb-2" />
+            <input v-model.number="modalData.quest_order" type="number" min="1" class="border p-2 rounded w-full mb-2" />
 
             <!-- Gestion des récompenses -->
             <label class="block mt-4 mb-2">Récompenses</label>
@@ -102,9 +126,11 @@
 <script>
 import AdminLayout from '../../layouts/AdminLayout.vue';
 import axios from 'axios';
+import Multiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.css"; // Styles du composant
 
 export default {
-  components: {AdminLayout},
+  components: {AdminLayout, Multiselect},
   data() {
     return {
       quests: [],
@@ -112,28 +138,25 @@ export default {
       search: '',
       modalOpen: false,
       modalType: null,
-      modalData: {title: '', description: '', level: 1, quest_order: 1, dofus_id: null, rewards: []},
+      modalData: {title: '', description: '', level: 1, quest_order: 1, dofus_ids: [], rewards: []},
       apiUrl: 'http://127.0.0.1:8000/api/quests',
-      dofusApiUrl: 'http://127.0.0.1:8000/api/dofus'
+      dofusApiUrl: 'http://127.0.0.1:8000/api/dofus',
     };
   },
   methods: {
     async fetchQuests() {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("Token JWT manquant !");
-          return;
-        }
-
         const response = await axios.get(this.apiUrl, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
 
-        console.log("✅ Réponse API des quêtes:", response.data); // Debug API
+        console.log("✅ Réponse API des quêtes:", response.data); // 🔥 DEBUG
 
-        this.quests = [...response.data];
-        console.log("🎯 this.quests après assignation:", this.quests); // Vérifier si Vue.js met bien à jour
+        this.quests = response.data.map(quest => ({
+          ...quest,
+          dofus_ids: Array.isArray(quest.dofus_ids) ? quest.dofus_ids : [] // ✅ Correction ici
+        }));
+
       } catch (error) {
         console.error("🚨 Erreur chargement Quêtes", error.response ? error.response.data : error.message);
       }
@@ -157,12 +180,19 @@ export default {
         console.error("Erreur chargement Dofus", error.response ? error.response.data : error.message);
       }
     },
-    openModal(type, quest = { title: "", description: "", level: 1, dofus_id: null, quest_order: 1, rewards: [] }) {
+    openModal(type, quest = {}) {
       this.modalType = type;
 
-      // S'assurer que quest.rewards est toujours un tableau
+      // Assurer que quest est bien défini et contient dofus_ids sous forme de tableau
       this.modalData = {
-        ...quest,
+        id: quest.id,
+        title: quest.title || "",
+        description: quest.description || "",
+        level: quest.level || 1,
+        quest_order: quest.questOrder || 1,
+        dofus_ids: Array.isArray(quest.dofus)
+            ? quest.dofus.map(dofus => ({ id: dofus.id, name: dofus.name }))
+            : [], // ✅ Vérification ici
         rewards: Array.isArray(quest.rewards) ? [...quest.rewards] : []
       };
 
@@ -176,19 +206,27 @@ export default {
     },
     async submitModal() {
       try {
+
+        if (this.modalType === "edit" && !this.modalData.id) {
+          console.error("🚨 Erreur : ID de la quête non défini !");
+          return;
+        }
+
         const data = {
           title: this.modalData.title,
           description: this.modalData.description,
           level: Number(this.modalData.level),
-          dofus_id: this.modalData.dofus_id || null,
-          quest_order: Number(this.modalData.quest_order) || 1, // 🛠 Correction ici
+          dofus_ids: this.modalData.dofus_ids.map(dofus => dofus.id) || [], // ✅ S'assurer que dofus_ids est un tableau
+          quest_order: this.modalData.quest_order !== '' ? Number(this.modalData.quest_order) : 1,
           rewards: this.modalData.rewards.map(r => ({
             name: r.name,
             quantity: Number(r.quantity) || 1
-          })) || null
+          })) || []
         };
 
-        console.log("Données envoyées:", data); // DEBUG
+        console.log("Valeur de quest_order ", data.quest_order);
+
+        console.log("✅ Données finales envoyées :", data); // ✅ Vérification des données envoyées
 
         if (this.modalType === "add") {
           await axios.post(this.apiUrl, data, {
@@ -207,7 +245,7 @@ export default {
         this.modalOpen = false;
         await this.fetchQuests();
       } catch (error) {
-        console.error("Erreur lors de l’opération", error.response ? error.response.data : error.message);
+        console.error("🚨 Erreur lors de l’opération", error.response ? error.response.data : error.message);
       }
     }
   },
@@ -221,7 +259,6 @@ export default {
   },
   computed: {
     filteredQuests() {
-      console.log("📌 this.quests dans computed():", this.quests); // 🔥 DEBUG
       return [...this.quests]
           .filter(q => q.title.toLowerCase().includes(this.search.toLowerCase()))
           .sort((a, b) => (a[this.sortKey] > b[this.sortKey] ? this.sortOrder : -this.sortOrder));
@@ -229,3 +266,20 @@ export default {
   },
 };
 </script>
+
+<style>
+/* Amélioration du sélecteur Vue Multiselect */
+.multiselect {
+  border: 1px solid #4a5568;
+  color: black;
+}
+
+.multiselect__tags {
+  border-radius: 5px;
+}
+
+.multiselect__option--selected {
+  background-color: #2c5282;
+  color: white;
+}
+</style>

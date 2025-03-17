@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Quest;
+use App\Entity\QuestReward;
 use App\Entity\QuestStep;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,6 +23,9 @@ class QuestStepController extends AbstractController
         foreach ($steps as $step) {
             $quest = $step->getQuest(); // Récupération de la quête liée
 
+            // ✅ Corrige la récupération des récompenses en utilisant l'entité `Quest`
+            $rewards = $em->getRepository(QuestReward::class)->findBy(['quest' => $quest]);
+
             $data[] = [
                 'id' => $step->getId(),
                 'title' => $step->getTitle(),
@@ -33,7 +37,12 @@ class QuestStepController extends AbstractController
                 'quest' => $quest ? [
                     'id' => $quest->getId(),
                     'title' => $quest->getTitle()
-                ] : null
+                ] : null,
+                'rewards' => array_map(fn($reward) => [
+                    'id' => $reward->getId(),
+                    'name' => $reward->getRewardName(),
+                    'quantity' => $reward->getQuantity()
+                ], $rewards),
             ];
         }
 

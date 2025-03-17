@@ -41,6 +41,15 @@ class Dofus
     #[ORM\Column]
     private ?bool $principal = true;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $type = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $icon = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $achievementCount = null;
+
     public function __construct()
     {
         $this->dofusQuests = new ArrayCollection();
@@ -149,6 +158,42 @@ class Dofus
     public function setPrincipal(bool $principal): static
     {
         $this->principal = $principal;
+
+        return $this;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(?string $type): static
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+    public function getIcon(): ?string
+    {
+        return $this->icon;
+    }
+
+    public function setIcon(?string $icon): static
+    {
+        $this->icon = $icon;
+
+        return $this;
+    }
+
+    public function getAchievementCount(): ?int
+    {
+        return $this->achievementCount;
+    }
+
+    public function setAchievementCount(?int $achievementCount): static
+    {
+        $this->achievementCount = $achievementCount;
 
         return $this;
     }
