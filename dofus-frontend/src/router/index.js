@@ -8,6 +8,7 @@ import Quests from '../views/admin/Quests.vue';
 import Dofus from '../views/admin/Dofus.vue';
 import Users from '../views/admin/Users.vue';
 import QuestSteps from "../views/admin/QuestSteps.vue";
+import Accueil from "@/views/Accueil.vue";
 
 const routes = [
     { path: '/login', component: Login },
@@ -16,6 +17,7 @@ const routes = [
     { path: '/admin/dofus', component: Dofus, meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/admin/steps', component: QuestSteps, meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/admin/users', component: Users, meta: { requiresAuth: true, requiresAdmin: true } },
+    { path: '/', component: Accueil, meta: { requiresAuth: true, requiresAdmin: true } },
 ];
 
 const router = createRouter({

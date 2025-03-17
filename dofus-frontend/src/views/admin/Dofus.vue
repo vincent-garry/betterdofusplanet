@@ -1,7 +1,7 @@
 <template>
   <AdminLayout>
     <div class="p-6">
-      <h1 class="text-3xl font-bold mb-6 text-white">Gestion des Dofus</h1>
+      <h1 class="text-3xl font-bold mb-6 text-gray-800">Gestion des Dofus</h1>
 
       <!-- Bouton d'ajout -->
       <button @click="openModal('add')" class="bg-purple-600 text-white px-4 py-2 rounded flex items-center">
